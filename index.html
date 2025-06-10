@@ -1,73 +1,68 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Registro de horas - Cadco</title>
-  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1995/1995526.png">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
-    h1 { color: #333; }
-    input, button { padding: 8px; margin: 5px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
-    th { background-color: #ddd; }
-    .no-edit { background-color: #eee; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background-color: #f2f2f2;
+    }
+    h1 {
+      text-align: center;
+    }
+    form {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+    }
+    input, button {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.3rem;
+    }
   </style>
 </head>
 <body>
   <h1>Registro de horas - Cadco</h1>
+  <form id="registroForm">
+    <label for="encargado">Encargado</label>
+    <input type="text" id="encargado" required />
 
-  <label>Hora inicial del odómetro:</label>
-  <input type="number" id="horaInicial" step="0.1"><br>
+    <label for="horaInicial">Hora Inicial (odómetro)</label>
+    <input type="number" id="horaInicial" required />
 
-  <label>Hora final del odómetro:</label>
-  <input type="number" id="horaFinal" step="0.1"><br>
+    <label for="horaFinal">Hora Final (odómetro)</label>
+    <input type="number" id="horaFinal" required />
 
-  <label>Nombre del encargado:</label>
-  <input type="text" id="encargado"><br>
-
-  <button onclick="guardarRegistro()">Guardar</button>
-  <button onclick="window.print()">Imprimir</button>
-
-  <table id="tablaRegistros">
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>Encargado</th>
-        <th>Hora Inicial</th>
-        <th>Hora Final</th>
-        <th>Horas Trabajadas</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <button type="submit">Guardar</button>
+  </form>
 
   <script>
-    function guardarRegistro() {
+    document.getElementById("registroForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const encargado = document.getElementById("encargado").value;
       const horaInicial = parseFloat(document.getElementById("horaInicial").value);
       const horaFinal = parseFloat(document.getElementById("horaFinal").value);
-      const encargado = document.getElementById("encargado").value.trim();
-      const fecha = new Date().toLocaleDateString();
+      const fecha = new Date().toLocaleDateString("es-CO");
+      const horasTrabajadas = horaFinal - horaInicial;
 
-      if (isNaN(horaInicial) || isNaN(horaFinal) || encargado === "" || horaFinal < horaInicial) {
-        alert("Por favor, llena correctamente todos los campos.");
+      if (horaFinal < horaInicial) {
+        alert("La hora final no puede ser menor que la inicial.");
         return;
       }
 
-      const horasTrabajadas = (horaFinal - horaInicial).toFixed(2);
-
-      // Mostrar en la tabla local
-      const tabla = document.getElementById("tablaRegistros").getElementsByTagName('tbody')[0];
-      const fila = tabla.insertRow();
-      [fecha, encargado, horaInicial, horaFinal, horasTrabajadas].forEach(texto => {
-        const celda = fila.insertCell();
-        celda.textContent = texto;
-        celda.classList.add("no-edit");
-      });
-
-      // Enviar a Google Sheets
-      https://script.google.com/macros/s/AKfycbyinRGNHoDSNWbXAY1RWBEaAVILjQEBl7708cP0RNqnJmqmLhdweEQDv6xD5A8ZO-fv/exec", {
+      fetch("https://script.google.com/macros/s/AKfycbyinRGNHoDSNWbXAY1RWBEaAVILjQEBl7708cP0RNqnJmqmLhdweEQDv6xD5A8ZO-fv/exec", {
         method: "POST",
         body: JSON.stringify({
           fecha,
@@ -79,21 +74,17 @@
         headers: {
           "Content-Type": "application/json"
         }
-      }).then(response => {
-        if (!response.ok) throw new Error("Error en el envío a Google Sheets");
-        return response.text();
-      }).then(data => {
-        console.log("Enviado a Sheets:", data);
-      }).catch(error => {
-        alert("Hubo un error al guardar en la nube.");
-        console.error(error);
+      })
+      .then(response => response.text())
+      .then(data => {
+        alert(data); // "Registro exitoso" o error
+        document.getElementById("registroForm").reset();
+      })
+      .catch(error => {
+        console.error("Error al guardar:", error);
+        alert("Error al guardar en la nube.");
       });
-
-      // Limpiar campos
-      document.getElementById("horaInicial").value = "";
-      document.getElementById("horaFinal").value = "";
-      document.getElementById("encargado").value = "";
-    }
+    });
   </script>
 </body>
 </html>
